@@ -1,0 +1,1001 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>이차함수 탐구 (y=ax²+bx+c)</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; }
+        /* 스크롤바 커스텀 */
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: #f1f1f1; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+        /* 캔버스 커서 */
+        canvas { cursor: grab; }
+        canvas:active { cursor: grabbing; }
+    </style>
+</head>
+<body class="bg-gray-50 text-gray-800 h-screen flex flex-col overflow-hidden">
+
+    <!-- 상단 헤더 -->
+    <header class="bg-white shadow-sm z-10 p-4 border-b border-gray-200">
+        <div class="max-w-7xl mx-auto flex justify-between items-center">
+            <h1 class="text-xl md:text-2xl font-bold text-indigo-600 flex items-center gap-2">
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-activity"><path d="M22 12h-2.48a2 2 0 0 0-1.93 1.46l-2.35 8.36a.25.25 0 0 1-.48 0L9.24 2.18a.25.25 0 0 0-.48 0l-2.35 8.36A2 2 0 0 1 4.48 12H2"/></svg>
+                이차함수 탐구 <span class="text-gray-500 font-medium text-lg hidden md:inline ml-2">y = ax² + bx + c</span>
+            </h1>
+            <div class="flex items-center gap-2">
+                <button id="open-coord-modal-btn" class="px-4 py-2 bg-indigo-100 text-indigo-700 hover:bg-indigo-200 rounded-lg text-sm font-semibold transition-colors shadow-sm">
+                    좌표 입력
+                </button>
+                <button id="point-mode-btn" class="px-4 py-2 bg-gray-100 text-gray-700 hover:bg-gray-200 rounded-lg text-sm font-semibold transition-colors">
+                    점 찍기: OFF
+                </button>
+                <button id="reset-btn" class="px-4 py-2 bg-indigo-50 text-indigo-600 hover:bg-indigo-100 rounded-lg text-sm font-semibold transition-colors">
+                    초기화
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- 메인 컨텐츠 영역 -->
+    <main class="flex-1 flex flex-col md:flex-row overflow-hidden">
+        
+        <!-- 왼쪽 패널: 컨트롤 및 속성 -->
+        <aside class="w-full md:w-80 lg:w-96 bg-white border-r border-gray-200 flex flex-col overflow-y-auto shadow-xl z-10 transition-all duration-300">
+            
+            <!-- 탭 메뉴 -->
+            <div class="flex border-b border-gray-200 bg-gray-50">
+                <button id="tab-standard" class="flex-1 py-3 text-sm font-semibold text-indigo-600 border-b-2 border-indigo-600 bg-white transition-colors">일반형</button>
+                <button id="tab-vertex" class="flex-1 py-3 text-sm font-semibold text-gray-500 border-b-2 border-transparent hover:text-gray-700 hover:bg-gray-100 transition-colors">표준형</button>
+            </div>
+
+            <!-- 현재 식 표시 -->
+            <div class="p-6 border-b border-gray-100 bg-indigo-50/30">
+                <p class="text-sm font-semibold text-gray-500 mb-2">현재 함수식</p>
+                <div id="equation-display" class="text-2xl font-bold text-center text-gray-800 tracking-wider">
+                    y = x²
+                </div>
+            </div>
+
+            <!-- 계수 조절 슬라이더 -->
+            <div class="p-6 space-y-6">
+                <!-- 일반형 컨트롤 -->
+                <div id="panel-standard" class="space-y-4 block">
+                    <!-- 계수 a -->
+                    <div class="space-y-2">
+                        <div class="flex justify-between items-center">
+                            <label class="font-semibold text-gray-700 flex items-center gap-2">
+                                <span class="bg-indigo-100 text-indigo-700 w-6 h-6 rounded-full inline-flex items-center justify-center text-sm">a</span>
+                                이차항 계수
+                            </label>
+                            <input type="number" id="input-a" class="w-20 px-2 py-1 border border-gray-300 rounded text-right focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500" value="1" step="0.1">
+                        </div>
+                        <input type="range" id="slider-a" min="-5" max="5" step="0.1" value="1" class="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-indigo-600">
+                    </div>
+
+                    <!-- 계수 b -->
+                    <div class="space-y-2">
+                        <div class="flex justify-between items-center">
+                            <label class="font-semibold text-gray-700 flex items-center gap-2">
+                                <span class="bg-emerald-100 text-emerald-700 w-6 h-6 rounded-full inline-flex items-center justify-center text-sm">b</span>
+                                일차항 계수
+                            </label>
+                            <input type="number" id="input-b" class="w-20 px-2 py-1 border border-gray-300 rounded text-right focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500" value="0" step="0.1">
+                        </div>
+                        <input type="range" id="slider-b" min="-10" max="10" step="0.1" value="0" class="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-emerald-600">
+                    </div>
+
+                    <!-- 계수 c -->
+                    <div class="space-y-2">
+                        <div class="flex justify-between items-center">
+                            <label class="font-semibold text-gray-700 flex items-center gap-2">
+                                <span class="bg-amber-100 text-amber-700 w-6 h-6 rounded-full inline-flex items-center justify-center text-sm">c</span>
+                                상수항
+                            </label>
+                            <input type="number" id="input-c" class="w-20 px-2 py-1 border border-gray-300 rounded text-right focus:outline-none focus:border-amber-500 focus:ring-1 focus:ring-amber-500" value="0" step="0.1">
+                        </div>
+                        <input type="range" id="slider-c" min="-10" max="10" step="0.1" value="0" class="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-amber-500">
+                    </div>
+                </div>
+
+                <!-- 표준형 컨트롤 -->
+                <div id="panel-vertex" class="space-y-4 hidden">
+                    <!-- 계수 a (표준형) -->
+                    <div class="space-y-2">
+                        <div class="flex justify-between items-center">
+                            <label class="font-semibold text-gray-700 flex items-center gap-2">
+                                <span class="bg-indigo-100 text-indigo-700 w-6 h-6 rounded-full inline-flex items-center justify-center text-sm">a</span>
+                                이차항 계수 (방향/폭)
+                            </label>
+                            <input type="number" id="input-va" class="w-20 px-2 py-1 border border-gray-300 rounded text-right focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500" value="1" step="0.1">
+                        </div>
+                        <input type="range" id="slider-va" min="-5" max="5" step="0.1" value="1" class="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-indigo-600">
+                    </div>
+
+                    <!-- 평행이동 p -->
+                    <div class="space-y-2">
+                        <div class="flex justify-between items-center">
+                            <label class="font-semibold text-gray-700 flex items-center gap-2">
+                                <span class="bg-emerald-100 text-emerald-700 w-6 h-6 rounded-full inline-flex items-center justify-center text-sm">p</span>
+                                x축 평행이동
+                            </label>
+                            <input type="number" id="input-p" class="w-20 px-2 py-1 border border-gray-300 rounded text-right focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500" value="0" step="0.1">
+                        </div>
+                        <input type="range" id="slider-p" min="-10" max="10" step="0.1" value="0" class="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-emerald-600">
+                    </div>
+
+                    <!-- 평행이동 q -->
+                    <div class="space-y-2">
+                        <div class="flex justify-between items-center">
+                            <label class="font-semibold text-gray-700 flex items-center gap-2">
+                                <span class="bg-amber-100 text-amber-700 w-6 h-6 rounded-full inline-flex items-center justify-center text-sm">q</span>
+                                y축 평행이동
+                            </label>
+                            <input type="number" id="input-q" class="w-20 px-2 py-1 border border-gray-300 rounded text-right focus:outline-none focus:border-amber-500 focus:ring-1 focus:ring-amber-500" value="0" step="0.1">
+                        </div>
+                        <input type="range" id="slider-q" min="-10" max="10" step="0.1" value="0" class="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-amber-500">
+                    </div>
+                </div>
+            </div>
+
+            <!-- 주요 속성 표시 -->
+            <div class="p-6 bg-gray-50 flex-1 border-t border-gray-200">
+                <h3 class="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-4">함수 주요 특징</h3>
+                
+                <div class="space-y-3" id="properties-container">
+                    <!-- 속성들이 동적으로 추가됨 -->
+                </div>
+            </div>
+        </aside>
+
+        <!-- 오른쪽 패널: 캔버스 그래프 -->
+        <section class="flex-1 relative bg-white overflow-hidden" id="canvas-container">
+            <!-- 줌 안내 메시지 -->
+            <div class="absolute top-4 left-4 bg-white/80 backdrop-blur px-3 py-1.5 rounded-md shadow-sm border border-gray-200 text-xs text-gray-500 flex items-center gap-2 pointer-events-none">
+                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/><path d="M8 11h6"/><path d="M11 8v6"/></svg>
+                마우스 휠로 확대/축소, 드래그로 이동
+            </div>
+            
+            <canvas id="graph-canvas" class="block w-full h-full touch-none"></canvas>
+        </section>
+
+        <!-- 좌표 입력 가상 키패드 모달 -->
+        <div id="coord-modal" class="hidden fixed inset-0 bg-black/40 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+            <div class="bg-white rounded-2xl shadow-2xl w-full max-w-sm overflow-hidden flex flex-col transform transition-all">
+                <div class="p-4 border-b border-gray-100 bg-gray-50 flex justify-between items-center">
+                    <h3 class="font-bold text-gray-800 flex items-center gap-2">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-indigo-600"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+                        좌표 직접 입력
+                    </h3>
+                    <button id="close-coord-modal" class="text-gray-400 hover:text-gray-600 transition-colors p-1">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                    </button>
+                </div>
+                <div class="p-5 flex gap-3 bg-white">
+                    <div class="flex-1">
+                        <label class="block text-xs font-bold text-gray-400 mb-1 uppercase tracking-wider">X 좌표</label>
+                        <div id="coord-x-wrap" class="border-2 rounded-xl p-3 text-right text-xl font-mono cursor-pointer transition-colors border-indigo-500 bg-indigo-50/30 text-indigo-700">0</div>
+                    </div>
+                    <div class="flex-1">
+                        <label class="block text-xs font-bold text-gray-400 mb-1 uppercase tracking-wider">Y 좌표</label>
+                        <div id="coord-y-wrap" class="border-2 border-gray-200 rounded-xl p-3 text-right text-xl font-mono cursor-pointer transition-colors bg-white text-gray-700">0</div>
+                    </div>
+                </div>
+                <div class="p-4 bg-gray-50 grid grid-cols-4 gap-2" id="keypad-container">
+                    <button class="keypad-btn bg-white border border-gray-200 rounded-lg shadow-sm py-4 text-xl font-semibold text-gray-700 hover:bg-gray-100 active:bg-gray-200 transition-colors" data-key="7">7</button>
+                    <button class="keypad-btn bg-white border border-gray-200 rounded-lg shadow-sm py-4 text-xl font-semibold text-gray-700 hover:bg-gray-100 active:bg-gray-200 transition-colors" data-key="8">8</button>
+                    <button class="keypad-btn bg-white border border-gray-200 rounded-lg shadow-sm py-4 text-xl font-semibold text-gray-700 hover:bg-gray-100 active:bg-gray-200 transition-colors" data-key="9">9</button>
+                    <button class="keypad-btn bg-red-50 border border-red-100 rounded-lg shadow-sm py-4 text-lg font-bold text-red-600 hover:bg-red-100 active:bg-red-200 transition-colors" data-key="del">⌫</button>
+                    
+                    <button class="keypad-btn bg-white border border-gray-200 rounded-lg shadow-sm py-4 text-xl font-semibold text-gray-700 hover:bg-gray-100 active:bg-gray-200 transition-colors" data-key="4">4</button>
+                    <button class="keypad-btn bg-white border border-gray-200 rounded-lg shadow-sm py-4 text-xl font-semibold text-gray-700 hover:bg-gray-100 active:bg-gray-200 transition-colors" data-key="5">5</button>
+                    <button class="keypad-btn bg-white border border-gray-200 rounded-lg shadow-sm py-4 text-xl font-semibold text-gray-700 hover:bg-gray-100 active:bg-gray-200 transition-colors" data-key="6">6</button>
+                    <button class="keypad-btn bg-orange-50 border border-orange-100 rounded-lg shadow-sm py-4 text-lg font-bold text-orange-600 hover:bg-orange-100 active:bg-orange-200 transition-colors" data-key="c">C</button>
+                    
+                    <button class="keypad-btn bg-white border border-gray-200 rounded-lg shadow-sm py-4 text-xl font-semibold text-gray-700 hover:bg-gray-100 active:bg-gray-200 transition-colors" data-key="1">1</button>
+                    <button class="keypad-btn bg-white border border-gray-200 rounded-lg shadow-sm py-4 text-xl font-semibold text-gray-700 hover:bg-gray-100 active:bg-gray-200 transition-colors" data-key="2">2</button>
+                    <button class="keypad-btn bg-white border border-gray-200 rounded-lg shadow-sm py-4 text-xl font-semibold text-gray-700 hover:bg-gray-100 active:bg-gray-200 transition-colors" data-key="3">3</button>
+                    <button class="keypad-btn bg-gray-200 border border-gray-300 rounded-lg shadow-sm py-4 text-sm font-bold text-gray-700 hover:bg-gray-300 active:bg-gray-400 transition-colors row-span-2 flex flex-col items-center justify-center gap-1" data-key="next">
+                        <span>X ↔ Y</span>
+                    </button>
+                    
+                    <button class="keypad-btn bg-white border border-gray-200 rounded-lg shadow-sm py-4 text-xl font-semibold text-gray-700 hover:bg-gray-100 active:bg-gray-200 transition-colors" data-key="-">±</button>
+                    <button class="keypad-btn bg-white border border-gray-200 rounded-lg shadow-sm py-4 text-xl font-semibold text-gray-700 hover:bg-gray-100 active:bg-gray-200 transition-colors" data-key="0">0</button>
+                    <button class="keypad-btn bg-white border border-gray-200 rounded-lg shadow-sm py-4 text-xl font-semibold text-gray-700 hover:bg-gray-100 active:bg-gray-200 transition-colors" data-key=".">.</button>
+                </div>
+                <div class="p-4 bg-white border-t border-gray-100">
+                    <button id="add-coord-btn" class="w-full bg-indigo-600 text-white rounded-xl py-3.5 font-bold text-lg hover:bg-indigo-700 active:bg-indigo-800 transition-colors shadow-md">
+                        점 추가하기
+                    </button>
+                </div>
+            </div>
+        </div>
+
+    </main>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            // DOM 요소
+            const canvas = document.getElementById('graph-canvas');
+            const ctx = canvas.getContext('2d', { alpha: false });
+            const container = document.getElementById('canvas-container');
+            
+            const sliderA = document.getElementById('slider-a');
+            const sliderB = document.getElementById('slider-b');
+            const sliderC = document.getElementById('slider-c');
+            const inputA = document.getElementById('input-a');
+            const inputB = document.getElementById('input-b');
+            const inputC = document.getElementById('input-c');
+            
+            const sliderVA = document.getElementById('slider-va');
+            const sliderP = document.getElementById('slider-p');
+            const sliderQ = document.getElementById('slider-q');
+            const inputVA = document.getElementById('input-va');
+            const inputP = document.getElementById('input-p');
+            const inputQ = document.getElementById('input-q');
+
+            const tabStandard = document.getElementById('tab-standard');
+            const tabVertex = document.getElementById('tab-vertex');
+            const panelStandard = document.getElementById('panel-standard');
+            const panelVertex = document.getElementById('panel-vertex');
+            
+            const equationDisplay = document.getElementById('equation-display');
+            const propertiesContainer = document.getElementById('properties-container');
+            const resetBtn = document.getElementById('reset-btn');
+            const pointModeBtn = document.getElementById('point-mode-btn');
+
+            // 가상 키패드 모달 관련 요소
+            const openCoordModalBtn = document.getElementById('open-coord-modal-btn');
+            const coordModal = document.getElementById('coord-modal');
+            const closeCoordModalBtn = document.getElementById('close-coord-modal');
+            const coordXWrap = document.getElementById('coord-x-wrap');
+            const coordYWrap = document.getElementById('coord-y-wrap');
+            const keypadBtns = document.querySelectorAll('.keypad-btn');
+            const addCoordBtn = document.getElementById('add-coord-btn');
+
+            // 뷰포트 상태 변수
+            let scale = 40; // 1단위당 픽셀 수
+            let offsetX = 0; // 캔버스 중심 기준 x 편차
+            let offsetY = 0; // 캔버스 중심 기준 y 편차
+            let currentWidth = 0;
+            let currentHeight = 0;
+            
+            // 드래그 및 상호작용 상태
+            let isDragging = false;
+            let dragStartX = 0;
+            let dragStartY = 0;
+            let lastMouseX = 0;
+            let lastMouseY = 0;
+            let isPointMode = false;
+            let customPoints = [];
+
+            // 가상 키패드 상태
+            let activeInput = 'x'; // 'x' or 'y'
+            let coordVals = { x: '', y: '' };
+
+            // 계수 변수
+            let currentMode = 'standard'; // 'standard' | 'vertex'
+            
+            // 일반형(standard) 변수
+            let a = 1; let b = 0; let c = 0;
+            // 표준형(vertex) 변수
+            let va = 1; let p = 0; let q = 0;
+
+            // 리사이즈 처리
+            function resizeCanvas() {
+                // 고해상도 디스플레이(Retina) 지원
+                const dpr = window.devicePixelRatio || 1;
+                const rect = container.getBoundingClientRect();
+                
+                // Flexbox 등에서 초기 width/height를 0으로 잡는 경우 무시
+                if (rect.width === 0 || rect.height === 0) return;
+
+                currentWidth = rect.width;
+                currentHeight = rect.height;
+                
+                canvas.width = rect.width * dpr;
+                canvas.height = rect.height * dpr;
+                
+                ctx.scale(dpr, dpr);
+                // 캔버스 자체의 width/height style은 Tailwind 클래스(w-full h-full)가 담당하므로 직접 제어하지 않음
+                
+                draw();
+            }
+
+            // 모드 전환
+            function setMode(mode) {
+                currentMode = mode;
+                if (mode === 'standard') {
+                    tabStandard.className = "flex-1 py-3 text-sm font-semibold text-indigo-600 border-b-2 border-indigo-600 bg-white transition-colors";
+                    tabVertex.className = "flex-1 py-3 text-sm font-semibold text-gray-500 border-b-2 border-transparent hover:text-gray-700 hover:bg-gray-100 transition-colors";
+                    panelStandard.classList.remove('hidden');
+                    panelStandard.classList.add('block');
+                    panelVertex.classList.add('hidden');
+                    panelVertex.classList.remove('block');
+                } else {
+                    tabVertex.className = "flex-1 py-3 text-sm font-semibold text-indigo-600 border-b-2 border-indigo-600 bg-white transition-colors";
+                    tabStandard.className = "flex-1 py-3 text-sm font-semibold text-gray-500 border-b-2 border-transparent hover:text-gray-700 hover:bg-gray-100 transition-colors";
+                    panelVertex.classList.remove('hidden');
+                    panelVertex.classList.add('block');
+                    panelStandard.classList.add('hidden');
+                    panelStandard.classList.remove('block');
+                }
+                updateCoefficients('slider'); // 현재 모드의 상태로 업데이트
+            }
+
+            // 계수 동기화 및 렌더링
+            function updateCoefficients(source) {
+                if (currentMode === 'standard') {
+                    if (source === 'slider') {
+                        a = parseFloat(sliderA.value); b = parseFloat(sliderB.value); c = parseFloat(sliderC.value);
+                        inputA.value = a; inputB.value = b; inputC.value = c;
+                    } else {
+                        a = parseFloat(inputA.value) || 0; b = parseFloat(inputB.value) || 0; c = parseFloat(inputC.value) || 0;
+                        sliderA.value = a; sliderB.value = b; sliderC.value = c;
+                    }
+                } else {
+                    if (source === 'slider') {
+                        va = parseFloat(sliderVA.value); p = parseFloat(sliderP.value); q = parseFloat(sliderQ.value);
+                        inputVA.value = va; inputP.value = p; inputQ.value = q;
+                    } else {
+                        va = parseFloat(inputVA.value) || 0; p = parseFloat(inputP.value) || 0; q = parseFloat(inputQ.value) || 0;
+                        sliderVA.value = va; sliderP.value = p; sliderQ.value = q;
+                    }
+                }
+                
+                updateEquationUI();
+                updatePropertiesUI();
+                draw();
+            }
+
+            // 수식 생성
+            function formatEquation() {
+                if (currentMode === 'standard') {
+                    if (a === 0 && b === 0 && c === 0) return "y = 0";
+                    
+                    let terms = [];
+                    if (a !== 0) {
+                        if (a === 1) terms.push("x²"); else if (a === -1) terms.push("-x²"); else terms.push(`${a}x²`);
+                    }
+                    if (b !== 0) {
+                        let bTerm = "";
+                        if (b > 0 && terms.length > 0) bTerm += "+ "; else if (b < 0 && terms.length > 0) bTerm += "- "; else if (b < 0) bTerm += "-";
+                        let absB = Math.abs(b);
+                        if (absB === 1) bTerm += "x"; else bTerm += `${absB}x`;
+                        terms.push(bTerm);
+                    }
+                    if (c !== 0) {
+                        let cTerm = "";
+                        if (c > 0 && terms.length > 0) cTerm += "+ "; else if (c < 0 && terms.length > 0) cTerm += "- "; else if (c < 0) cTerm += "-";
+                        cTerm += Math.abs(c);
+                        terms.push(cTerm);
+                    }
+                    return `y = ${terms.join(" ")}`;
+                } else {
+                    if (va === 0) return `y = ${q}`;
+                    
+                    let termA = "";
+                    if (va === 1) termA = ""; else if (va === -1) termA = "-"; else termA = va;
+
+                    let termP = "";
+                    if (p === 0) {
+                        termP = "x²";
+                    } else if (p > 0) {
+                        termP = `(x - ${p})²`;
+                    } else {
+                        termP = `(x + ${Math.abs(p)})²`;
+                    }
+
+                    let termQ = "";
+                    if (q > 0) termQ = ` + ${q}`; else if (q < 0) termQ = ` - ${Math.abs(q)}`;
+                    
+                    return `y = ${termA}${termP}${termQ}`;
+                }
+            }
+
+            // 소수점 처리 유틸리티
+            function roundTo(num, decimals = 2) {
+                const factor = Math.pow(10, decimals);
+                return Math.round(num * factor) / factor;
+            }
+
+            // 속성 UI 업데이트
+            function updatePropertiesUI() {
+                let html = '';
+                
+                const addProp = (label, value, colorClass = 'text-gray-800') => {
+                    html += `
+                        <div class="flex justify-between items-center p-3 bg-white rounded-lg shadow-sm border border-gray-100">
+                            <span class="text-gray-500 text-sm">${label}</span>
+                            <span class="font-mono font-medium ${colorClass}">${value}</span>
+                        </div>
+                    `;
+                };
+
+                if (currentMode === 'standard') {
+                    if (a === 0) {
+                        html = `
+                            <div class="p-4 bg-red-50 text-red-600 rounded-lg text-sm text-center border border-red-100">
+                                이차항의 계수(a)가 0이므로<br><b>일차함수(직선)</b>입니다.
+                            </div>
+                        `;
+                        if (b !== 0) {
+                            addProp('x절편', `(${roundTo(-c/b)}, 0)`);
+                        }
+                        addProp('y절편', `(0, ${roundTo(c)})`);
+                    } else {
+                        let vx = -b / (2 * a);
+                        if (Math.abs(vx) < 1e-10) vx = 0;
+                        let vy = a * vx * vx + b * vx + c;
+                        
+                        addProp('꼭짓점', `(${roundTo(vx)}, ${roundTo(vy)})`, 'text-indigo-600');
+                        addProp('대칭축', `x = ${roundTo(vx)}`);
+                        addProp('y절편', `(0, ${roundTo(c)})`);
+                        
+                        let D = b * b - 4 * a * c;
+                        if (Math.abs(D) < 1e-10) D = 0;
+                        
+                        if (D > 0) {
+                            let x1 = (-b - Math.sqrt(D)) / (2 * a);
+                            let x2 = (-b + Math.sqrt(D)) / (2 * a);
+                            addProp('x절편 (실근 2개)', `(${roundTo(Math.min(x1, x2))}, 0), (${roundTo(Math.max(x1, x2))}, 0)`, 'text-red-500');
+                        } else if (D === 0) {
+                            addProp('x절편 (중근 1개)', `(${roundTo(vx)}, 0)`, 'text-red-500');
+                        } else {
+                            addProp('x절편', '없음', 'text-gray-400');
+                        }
+                    }
+                } else {
+                    // 표준형 속성 업데이트
+                    if (va === 0) {
+                        html = `
+                            <div class="p-4 bg-red-50 text-red-600 rounded-lg text-sm text-center border border-red-100">
+                                이차항의 계수(a)가 0이므로<br><b>상수함수(수평선)</b>입니다.
+                            </div>
+                        `;
+                        addProp('y절편', `(0, ${roundTo(q)})`);
+                    } else {
+                        addProp('꼭짓점', `(${roundTo(p)}, ${roundTo(q)})`, 'text-indigo-600');
+                        addProp('대칭축', `x = ${roundTo(p)}`);
+                        
+                        let yInt = va * p * p + q;
+                        addProp('y절편', `(0, ${roundTo(yInt)})`);
+                        
+                        let val = -q / va;
+                        if (Math.abs(val) < 1e-10) val = 0; // -0 방지
+                        
+                        if (val > 0) {
+                            let root = Math.sqrt(val);
+                            addProp('x절편 (실근 2개)', `(${roundTo(p - root)}, 0), (${roundTo(p + root)}, 0)`, 'text-red-500');
+                        } else if (val === 0) {
+                            addProp('x절편 (중근 1개)', `(${roundTo(p)}, 0)`, 'text-red-500');
+                        } else {
+                            addProp('x절편', '없음', 'text-gray-400');
+                        }
+                    }
+                }
+                
+                propertiesContainer.innerHTML = html;
+            }
+
+            // 식 UI 업데이트
+            function updateEquationUI() {
+                equationDisplay.textContent = formatEquation();
+            }
+
+            // 좌표 변환 유틸리티
+            const logicToScreenX = (x) => currentWidth / 2 + x * scale + offsetX;
+            const logicToScreenY = (y) => currentHeight / 2 - y * scale + offsetY;
+            
+            const screenToLogicX = (sx) => (sx - offsetX - currentWidth / 2) / scale;
+            const screenToLogicY = (sy) => -(sy - offsetY - currentHeight / 2) / scale;
+
+            // 렌더링 함수
+            function draw() {
+                if (currentWidth === 0 || currentHeight === 0) return;
+
+                const width = currentWidth;
+                const height = currentHeight;
+                
+                // 배경 채우기
+                ctx.fillStyle = '#ffffff';
+                ctx.fillRect(0, 0, width, height);
+                
+                // 그리드 그리기
+                drawGrid();
+                
+                // x축, y축 그리기
+                drawAxes();
+                
+                // 함수 그래프 그리기
+                drawFunction();
+                
+                // 주요 점 그리기
+                if ((currentMode === 'standard' && a !== 0) || (currentMode === 'vertex' && va !== 0)) {
+                    drawKeyPoints();
+                }
+
+                // 사용자가 찍은 커스텀 점 그리기
+                customPoints.forEach((p) => {
+                    drawPoint(p.x, p.y, '#10b981', `(${roundTo(p.x)}, ${roundTo(p.y)})`, 'bottom');
+                });
+            }
+
+            function drawGrid() {
+                ctx.strokeStyle = '#f1f5f9';
+                ctx.lineWidth = 1;
+                
+                const startX = Math.floor(screenToLogicX(0));
+                const endX = Math.ceil(screenToLogicX(currentWidth));
+                const startY = Math.floor(screenToLogicY(currentHeight));
+                const endY = Math.ceil(screenToLogicY(0));
+                
+                // 서브 그리드 (0.5 단위) - 축소가 많이 안되었을때만
+                if (scale > 30) {
+                    ctx.beginPath();
+                    for (let x = startX - 1; x <= endX + 1; x += 0.5) {
+                        const sx = logicToScreenX(x);
+                        ctx.moveTo(sx, 0); ctx.lineTo(sx, currentHeight);
+                    }
+                    for (let y = startY - 1; y <= endY + 1; y += 0.5) {
+                        const sy = logicToScreenY(y);
+                        ctx.moveTo(0, sy); ctx.lineTo(currentWidth, sy);
+                    }
+                    ctx.stroke();
+                }
+                
+                // 메인 그리드 (1 단위)
+                ctx.strokeStyle = '#e2e8f0';
+                ctx.beginPath();
+                // 동적 그리드 간격 조절 (축소 시 뭉개짐 방지)
+                let step = 1;
+                if (scale < 15) step = 2;
+                if (scale < 8) step = 5;
+                if (scale < 3) step = 10;
+                
+                for (let x = Math.floor(startX/step)*step; x <= endX + step; x += step) {
+                    const sx = logicToScreenX(x);
+                    ctx.moveTo(sx, 0); ctx.lineTo(sx, currentHeight);
+                }
+                for (let y = Math.floor(startY/step)*step; y <= endY + step; y += step) {
+                    const sy = logicToScreenY(y);
+                    ctx.moveTo(0, sy); ctx.lineTo(currentWidth, sy);
+                }
+                ctx.stroke();
+            }
+
+            function drawAxes() {
+                ctx.strokeStyle = '#94a3b8';
+                ctx.lineWidth = 2;
+                
+                const originX = logicToScreenX(0);
+                const originY = logicToScreenY(0);
+                
+                ctx.beginPath();
+                // X축
+                if (originY >= 0 && originY <= currentHeight) {
+                    ctx.moveTo(0, originY);
+                    ctx.lineTo(currentWidth, originY);
+                }
+                // Y축
+                if (originX >= 0 && originX <= currentWidth) {
+                    ctx.moveTo(originX, 0);
+                    ctx.lineTo(originX, currentHeight);
+                }
+                ctx.stroke();
+                
+                // 축 숫자 표시
+                ctx.fillStyle = '#64748b';
+                ctx.font = '12px sans-serif';
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'top';
+                
+                const startX = Math.floor(screenToLogicX(0));
+                const endX = Math.ceil(screenToLogicX(currentWidth));
+                const startY = Math.floor(screenToLogicY(currentHeight));
+                const endY = Math.ceil(screenToLogicY(0));
+                
+                let step = 1;
+                if (scale < 20) step = 2;
+                if (scale < 10) step = 5;
+                if (scale < 4) step = 10;
+
+                // X축 숫자
+                for (let x = Math.floor(startX/step)*step; x <= endX + step; x += step) {
+                    if (x !== 0) {
+                        let sx = logicToScreenX(x);
+                        let sy = Math.max(0, Math.min(currentHeight - 15, originY + 5));
+                        ctx.fillText(x.toString(), sx, sy);
+                    }
+                }
+                
+                // Y축 숫자
+                ctx.textAlign = 'right';
+                ctx.textBaseline = 'middle';
+                for (let y = Math.floor(startY/step)*step; y <= endY + step; y += step) {
+                    if (y !== 0) {
+                        let sx = Math.max(15, Math.min(currentWidth - 5, originX - 5));
+                        let sy = logicToScreenY(y);
+                        ctx.fillText(y.toString(), sx, sy);
+                    }
+                }
+                
+                // 원점
+                ctx.textAlign = 'right';
+                ctx.textBaseline = 'top';
+                ctx.fillText('0', originX - 5, originY + 5);
+            }
+
+            function drawFunction() {
+                ctx.strokeStyle = '#4f46e5'; // Indigo 600
+                ctx.lineWidth = 3;
+                ctx.lineJoin = 'round';
+                ctx.lineCap = 'round';
+                
+                ctx.beginPath();
+                
+                // 화면의 시작 x부터 끝 x까지 계산
+                let startLogicalX = screenToLogicX(0);
+                let endLogicalX = screenToLogicX(currentWidth);
+                
+                // 1픽셀 간격으로 정밀하게 설정
+                let step = 1 / Math.max(scale, 0.1);
+                
+                let first = true;
+                let isPrevVisible = false;
+
+                for (let x = startLogicalX; x <= endLogicalX + step; x += step) {
+                    let y;
+                    if (currentMode === 'standard') {
+                        y = a * x * x + b * x + c;
+                    } else {
+                        y = va * (x - p) * (x - p) + q;
+                    }
+
+                    let sx = logicToScreenX(x);
+                    let sy = logicToScreenY(y);
+                    
+                    let isVisible = (sy >= -currentHeight && sy <= currentHeight * 2);
+                    
+                    if (first) {
+                        ctx.moveTo(sx, sy);
+                        first = false;
+                    } else {
+                        // 현재 점이나 이전 점 중 하나라도 화면 근처에 있으면 선을 그림
+                        if (isVisible || isPrevVisible) {
+                             ctx.lineTo(sx, sy);
+                        } else {
+                             ctx.moveTo(sx, sy);
+                        }
+                    }
+                    isPrevVisible = isVisible;
+                }
+                ctx.stroke();
+
+                // 대칭축 그리기
+                if ((currentMode === 'standard' && a !== 0) || (currentMode === 'vertex' && va !== 0)) {
+                    let vx = currentMode === 'standard' ? -b / (2 * a) : p;
+                    let svx = logicToScreenX(vx);
+                    if (svx > 0 && svx < currentWidth) {
+                        ctx.beginPath();
+                        ctx.strokeStyle = 'rgba(99, 102, 241, 0.3)'; // 반투명 indigo
+                        ctx.lineWidth = 1;
+                        ctx.setLineDash([5, 5]);
+                        ctx.moveTo(svx, 0);
+                        ctx.lineTo(svx, currentHeight);
+                        ctx.stroke();
+                        ctx.setLineDash([]); // 리셋
+                    }
+                }
+            }
+
+            function drawPoint(x, y, color, label, pos = 'bottom') {
+                const sx = logicToScreenX(x);
+                const sy = logicToScreenY(y);
+                
+                // 화면 밖이면 무시
+                if (sx < -10 || sx > currentWidth + 10 || sy < -10 || sy > currentHeight + 10) return;
+
+                // 점
+                ctx.fillStyle = color;
+                ctx.beginPath();
+                ctx.arc(sx, sy, 5, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.strokeStyle = '#fff';
+                ctx.lineWidth = 2;
+                ctx.stroke();
+
+                // 라벨
+                ctx.fillStyle = '#1e293b';
+                ctx.font = 'bold 12px sans-serif';
+                ctx.textAlign = 'center';
+                
+                if (pos === 'bottom') {
+                    ctx.textBaseline = 'top';
+                    ctx.fillText(label, sx, sy + 8);
+                } else if (pos === 'top') {
+                    ctx.textBaseline = 'bottom';
+                    ctx.fillText(label, sx, sy - 8);
+                } else if (pos === 'left') {
+                    ctx.textAlign = 'right';
+                    ctx.textBaseline = 'middle';
+                    ctx.fillText(label, sx - 8, sy);
+                } else {
+                    ctx.textAlign = 'left';
+                    ctx.textBaseline = 'middle';
+                    ctx.fillText(label, sx + 8, sy);
+                }
+            }
+
+            function drawKeyPoints() {
+                // 꼭짓점
+                let vx, vy, isA_Positive;
+                if (currentMode === 'standard') {
+                    vx = -b / (2 * a);
+                    if (Math.abs(vx) < 1e-10) vx = 0;
+                    vy = a * vx * vx + b * vx + c;
+                    isA_Positive = (a > 0);
+                } else {
+                    vx = p;
+                    vy = q;
+                    isA_Positive = (va > 0);
+                }
+                
+                // 꼭짓점이 위로 볼록(a<0)이면 위에 라벨, 아래로 볼록(a>0)이면 아래에 라벨
+                drawPoint(vx, vy, '#4f46e5', `(${roundTo(vx)}, ${roundTo(vy)})`, isA_Positive ? 'bottom' : 'top');
+
+                // y절편 표시 제거됨
+                // x절편 표시 제거됨
+            }
+
+            // 이벤트 리스너: 탭 전환
+            tabStandard.addEventListener('click', () => setMode('standard'));
+            tabVertex.addEventListener('click', () => setMode('vertex'));
+
+            // 이벤트 리스너: 입력 변경
+            [sliderA, sliderB, sliderC, sliderVA, sliderP, sliderQ].forEach(el => {
+                if (el) el.addEventListener('input', () => updateCoefficients('slider'));
+            });
+            
+            [inputA, inputB, inputC, inputVA, inputP, inputQ].forEach(el => {
+                if (el) el.addEventListener('input', () => updateCoefficients('input'));
+            });
+
+            // 초기화 버튼
+            resetBtn.addEventListener('click', () => {
+                sliderA.value = 1; inputA.value = 1;
+                sliderB.value = 0; inputB.value = 0;
+                sliderC.value = 0; inputC.value = 0;
+                
+                sliderVA.value = 1; inputVA.value = 1;
+                sliderP.value = 0; inputP.value = 0;
+                sliderQ.value = 0; inputQ.value = 0;
+                
+                scale = 40;
+                offsetX = 0;
+                offsetY = 0;
+                customPoints = [];
+                updateCoefficients('slider');
+            });
+
+            // 점 찍기 모드 토글 기능
+            pointModeBtn.addEventListener('click', () => {
+                isPointMode = !isPointMode;
+                if (isPointMode) {
+                    pointModeBtn.textContent = '점 찍기: ON';
+                    pointModeBtn.classList.replace('bg-gray-100', 'bg-emerald-100');
+                    pointModeBtn.classList.replace('text-gray-700', 'text-emerald-700');
+                    canvas.style.cursor = 'crosshair';
+                } else {
+                    pointModeBtn.textContent = '점 찍기: OFF';
+                    pointModeBtn.classList.replace('bg-emerald-100', 'bg-gray-100');
+                    pointModeBtn.classList.replace('text-emerald-700', 'text-gray-700');
+                    canvas.style.cursor = 'grab';
+                }
+            });
+
+            // --- 가상 키패드 로직 ---
+            function updateCoordDisplay() {
+                coordXWrap.textContent = coordVals.x === '' ? '0' : coordVals.x;
+                coordYWrap.textContent = coordVals.y === '' ? '0' : coordVals.y;
+
+                if (activeInput === 'x') {
+                    coordXWrap.className = "border-2 rounded-xl p-3 text-right text-xl font-mono cursor-pointer transition-colors border-indigo-500 bg-indigo-50/30 text-indigo-700";
+                    coordYWrap.className = "border-2 border-gray-200 rounded-xl p-3 text-right text-xl font-mono cursor-pointer transition-colors bg-white text-gray-700";
+                } else {
+                    coordYWrap.className = "border-2 rounded-xl p-3 text-right text-xl font-mono cursor-pointer transition-colors border-indigo-500 bg-indigo-50/30 text-indigo-700";
+                    coordXWrap.className = "border-2 border-gray-200 rounded-xl p-3 text-right text-xl font-mono cursor-pointer transition-colors bg-white text-gray-700";
+                }
+            }
+
+            openCoordModalBtn.addEventListener('click', () => {
+                coordModal.classList.remove('hidden');
+                activeInput = 'x';
+                updateCoordDisplay();
+            });
+
+            closeCoordModalBtn.addEventListener('click', () => {
+                coordModal.classList.add('hidden');
+            });
+
+            coordXWrap.addEventListener('click', () => { activeInput = 'x'; updateCoordDisplay(); });
+            coordYWrap.addEventListener('click', () => { activeInput = 'y'; updateCoordDisplay(); });
+
+            keypadBtns.forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    // button 태그 내부의 span 등이 눌릴 수 있으므로 currentTarget 사용
+                    const key = e.currentTarget.dataset.key;
+                    let val = coordVals[activeInput];
+
+                    if (/[0-9]/.test(key)) {
+                        if (val === '0') val = key;
+                        else if (val === '-0') val = '-' + key;
+                        else val += key;
+                    } else if (key === '.') {
+                        if (!val.includes('.')) val += val === '' || val === '-' ? '0.' : '.';
+                    } else if (key === '-') {
+                        if (val.startsWith('-')) val = val.substring(1);
+                        else val = '-' + val;
+                    } else if (key === 'del') {
+                        val = val.slice(0, -1);
+                    } else if (key === 'c') {
+                        val = '';
+                    } else if (key === 'next') {
+                        activeInput = activeInput === 'x' ? 'y' : 'x';
+                        updateCoordDisplay();
+                        return;
+                    }
+
+                    coordVals[activeInput] = val;
+                    updateCoordDisplay();
+                });
+            });
+
+            addCoordBtn.addEventListener('click', () => {
+                let px = parseFloat(coordVals.x);
+                let py = parseFloat(coordVals.y);
+                
+                if (isNaN(px)) px = 0;
+                if (isNaN(py)) py = 0;
+
+                customPoints.push({x: px, y: py});
+                draw();
+
+                // 리셋 후 x 입력으로 되돌림 (연속 추가를 위해 창은 닫지 않음)
+                coordVals = { x: '', y: '' };
+                activeInput = 'x';
+                updateCoordDisplay();
+                
+                // 시각적 피드백
+                const originalText = addCoordBtn.textContent;
+                addCoordBtn.textContent = '추가 완료!';
+                addCoordBtn.classList.replace('bg-indigo-600', 'bg-emerald-500');
+                addCoordBtn.classList.replace('hover:bg-indigo-700', 'hover:bg-emerald-600');
+                setTimeout(() => {
+                    addCoordBtn.textContent = originalText;
+                    addCoordBtn.classList.replace('bg-emerald-500', 'bg-indigo-600');
+                    addCoordBtn.classList.replace('hover:bg-emerald-600', 'hover:bg-indigo-700');
+                }, 800);
+            });
+            // -------------------------
+
+            // 캔버스 인터랙션: 확대/축소
+            canvas.addEventListener('wheel', (e) => {
+                e.preventDefault();
+                
+                // 마우스 위치 기준으로 줌인/아웃 하기 위한 계산
+                const rect = canvas.getBoundingClientRect();
+                const mouseX = e.clientX - rect.left;
+                const mouseY = e.clientY - rect.top;
+                
+                const logicXBefore = screenToLogicX(mouseX);
+                const logicYBefore = screenToLogicY(mouseY);
+
+                const zoomFactor = 1.1;
+                if (e.deltaY < 0) {
+                    scale *= zoomFactor; // 확대
+                } else {
+                    scale /= zoomFactor; // 축소
+                }
+                
+                // 스케일 제한
+                scale = Math.max(1, Math.min(scale, 500));
+
+                // 줌 후 위치 보정
+                offsetX = mouseX - currentWidth/2 - logicXBefore * scale;
+                offsetY = mouseY - currentHeight/2 + logicYBefore * scale;
+
+                draw();
+            }, { passive: false });
+
+            // 캔버스 인터랙션: 드래그 이동 및 점 찍기
+            const startDrag = (e) => {
+                isDragging = true;
+                const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+                const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+                dragStartX = clientX;
+                dragStartY = clientY;
+                lastMouseX = clientX;
+                lastMouseY = clientY;
+                if (!isPointMode) canvas.style.cursor = 'grabbing';
+            };
+
+            const doDrag = (e) => {
+                if (!isDragging) return;
+                e.preventDefault();
+                const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+                const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+                
+                const dx = clientX - lastMouseX;
+                const dy = clientY - lastMouseY;
+                
+                offsetX += dx;
+                offsetY += dy;
+                
+                lastMouseX = clientX;
+                lastMouseY = clientY;
+                
+                draw();
+            };
+
+            const endDrag = (e) => {
+                if (!isDragging) return;
+                isDragging = false;
+                if (!isPointMode) canvas.style.cursor = 'grab';
+                
+                if (!e) return;
+                
+                const clientX = e.changedTouches ? e.changedTouches[0].clientX : e.clientX;
+                const clientY = e.changedTouches ? e.changedTouches[0].clientY : e.clientY;
+                
+                // 점 찍기 모드일 때 클릭(거의 이동하지 않음)으로 인식되면 점을 추가하거나 삭제
+                if (isPointMode && Math.abs(clientX - dragStartX) < 5 && Math.abs(clientY - dragStartY) < 5) {
+                    const rect = canvas.getBoundingClientRect();
+                    const canvasX = clientX - rect.left;
+                    const canvasY = clientY - rect.top;
+                    
+                    // 캔버스 내부 클릭인지 확인
+                    if (canvasX >= 0 && canvasX <= rect.width && canvasY >= 0 && canvasY <= rect.height) {
+                        const logicX = screenToLogicX(canvasX);
+                        const logicY = screenToLogicY(canvasY);
+                        
+                        // 기존 점과 가까운지 확인 (가까우면 삭제)
+                        const hitIndex = customPoints.findIndex(p => {
+                            const sx = logicToScreenX(p.x);
+                            const sy = logicToScreenY(p.y);
+                            return Math.hypot(sx - canvasX, sy - canvasY) < 15; // 15px 반경
+                        });
+                        
+                        if (hitIndex >= 0) {
+                            customPoints.splice(hitIndex, 1);
+                        } else {
+                            customPoints.push({x: logicX, y: logicY});
+                        }
+                        draw();
+                    }
+                }
+            };
+
+            canvas.addEventListener('mousedown', startDrag);
+            window.addEventListener('mousemove', doDrag);
+            window.addEventListener('mouseup', endDrag);
+
+            canvas.addEventListener('touchstart', startDrag, { passive: false });
+            window.addEventListener('touchmove', doDrag, { passive: false });
+            window.addEventListener('touchend', endDrag);
+
+            // ResizeObserver를 통해 컨테이너 크기 변화를 감지 (초기 렌더링 시 레이아웃 이슈 방지)
+            const resizeObserver = new ResizeObserver(() => {
+                resizeCanvas();
+            });
+            resizeObserver.observe(container);
+
+            // 초기 설정 실행
+            updateCoefficients('slider');
+        });
+    </script>
+</body>
+</html>
