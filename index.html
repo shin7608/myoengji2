@@ -664,4 +664,343 @@
                         ctx.moveTo(sx, sy);
                         first = false;
                     } else {
-                        // 현재 점이나 이전 점
+                        // 현재 점이나 이전 점 중 하나라도 화면 근처에 있으면 선을 그림
+                        if (isVisible || isPrevVisible) {
+                             ctx.lineTo(sx, sy);
+                        } else {
+                             ctx.moveTo(sx, sy);
+                        }
+                    }
+                    isPrevVisible = isVisible;
+                }
+                ctx.stroke();
+
+                // 대칭축 그리기
+                if ((currentMode === 'standard' && a !== 0) || (currentMode === 'vertex' && va !== 0)) {
+                    let vx = currentMode === 'standard' ? -b / (2 * a) : p;
+                    let svx = logicToScreenX(vx);
+                    if (svx > 0 && svx < currentWidth) {
+                        ctx.beginPath();
+                        ctx.strokeStyle = 'rgba(99, 102, 241, 0.3)'; // 반투명 indigo
+                        ctx.lineWidth = 1;
+                        ctx.setLineDash([5, 5]);
+                        ctx.moveTo(svx, 0);
+                        ctx.lineTo(svx, currentHeight);
+                        ctx.stroke();
+                        ctx.setLineDash([]); // 리셋
+                    }
+                }
+            }
+
+            function drawPoint(x, y, color, label, pos = 'bottom') {
+                const sx = logicToScreenX(x);
+                const sy = logicToScreenY(y);
+                
+                // 화면 밖이면 무시
+                if (sx < -10 || sx > currentWidth + 10 || sy < -10 || sy > currentHeight + 10) return;
+
+                // 점
+                ctx.fillStyle = color;
+                ctx.beginPath();
+                ctx.arc(sx, sy, 5, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.strokeStyle = '#fff';
+                ctx.lineWidth = 2;
+                ctx.stroke();
+
+                // 라벨
+                ctx.fillStyle = '#1e293b';
+                ctx.font = 'bold 12px sans-serif';
+                ctx.textAlign = 'center';
+                
+                if (pos === 'bottom') {
+                    ctx.textBaseline = 'top';
+                    ctx.fillText(label, sx, sy + 8);
+                } else if (pos === 'top') {
+                    ctx.textBaseline = 'bottom';
+                    ctx.fillText(label, sx, sy - 8);
+                } else if (pos === 'left') {
+                    ctx.textAlign = 'right';
+                    ctx.textBaseline = 'middle';
+                    ctx.fillText(label, sx - 8, sy);
+                } else {
+                    ctx.textAlign = 'left';
+                    ctx.textBaseline = 'middle';
+                    ctx.fillText(label, sx + 8, sy);
+                }
+            }
+
+            function drawKeyPoints() {
+                // 꼭짓점
+                let vx, vy, isA_Positive;
+                if (currentMode === 'standard') {
+                    vx = -b / (2 * a);
+                    if (Math.abs(vx) < 1e-10) vx = 0;
+                    vy = a * vx * vx + b * vx + c;
+                    isA_Positive = (a > 0);
+                } else {
+                    vx = p;
+                    vy = q;
+                    isA_Positive = (va > 0);
+                }
+                
+                // 꼭짓점이 위로 볼록(a<0)이면 위에 라벨, 아래로 볼록(a>0)이면 아래에 라벨
+                drawPoint(vx, vy, '#4f46e5', `(${roundTo(vx)}, ${roundTo(vy)})`, isA_Positive ? 'bottom' : 'top');
+
+                // y절편 표시 제거됨
+                // x절편 표시 제거됨
+            }
+
+            // 이벤트 리스너: 탭 전환
+            tabStandard.addEventListener('click', () => setMode('standard'));
+            tabVertex.addEventListener('click', () => setMode('vertex'));
+
+            // 이벤트 리스너: 입력 변경
+            [sliderA, sliderB, sliderC, sliderVA, sliderP, sliderQ].forEach(el => {
+                if (el) el.addEventListener('input', () => updateCoefficients('slider'));
+            });
+            
+            [inputA, inputB, inputC, inputVA, inputP, inputQ].forEach(el => {
+                if (el) el.addEventListener('input', () => updateCoefficients('input'));
+            });
+
+            // 초기화 버튼
+            resetBtn.addEventListener('click', () => {
+                sliderA.value = 1; inputA.value = 1;
+                sliderB.value = 0; inputB.value = 0;
+                sliderC.value = 0; inputC.value = 0;
+                
+                sliderVA.value = 1; inputVA.value = 1;
+                sliderP.value = 0; inputP.value = 0;
+                sliderQ.value = 0; inputQ.value = 0;
+                
+                scale = 40;
+                offsetX = 0;
+                offsetY = 0;
+                customPoints = [];
+                updateCoefficients('slider');
+            });
+
+            // 점 찍기 모드 토글 기능
+            pointModeBtn.addEventListener('click', () => {
+                isPointMode = !isPointMode;
+                if (isPointMode) {
+                    pointModeBtn.textContent = '점 찍기: ON';
+                    pointModeBtn.classList.replace('bg-gray-100', 'bg-emerald-100');
+                    pointModeBtn.classList.replace('text-gray-700', 'text-emerald-700');
+                    canvas.style.cursor = 'crosshair';
+                } else {
+                    pointModeBtn.textContent = '점 찍기: OFF';
+                    pointModeBtn.classList.replace('bg-emerald-100', 'bg-gray-100');
+                    pointModeBtn.classList.replace('text-emerald-700', 'text-gray-700');
+                    canvas.style.cursor = 'grab';
+                }
+            });
+
+            // --- 가상 키패드 로직 ---
+            function updateCoordDisplay() {
+                coordXWrap.textContent = coordVals.x === '' ? '0' : coordVals.x;
+                coordYWrap.textContent = coordVals.y === '' ? '0' : coordVals.y;
+
+                if (activeInput === 'x') {
+                    coordXWrap.className = "border-2 rounded-xl p-3 text-right text-xl font-mono cursor-pointer transition-colors border-indigo-500 bg-indigo-50/30 text-indigo-700";
+                    coordYWrap.className = "border-2 border-gray-200 rounded-xl p-3 text-right text-xl font-mono cursor-pointer transition-colors bg-white text-gray-700";
+                } else {
+                    coordYWrap.className = "border-2 rounded-xl p-3 text-right text-xl font-mono cursor-pointer transition-colors border-indigo-500 bg-indigo-50/30 text-indigo-700";
+                    coordXWrap.className = "border-2 border-gray-200 rounded-xl p-3 text-right text-xl font-mono cursor-pointer transition-colors bg-white text-gray-700";
+                }
+            }
+
+            openCoordModalBtn.addEventListener('click', () => {
+                coordModal.classList.remove('hidden');
+                activeInput = 'x';
+                updateCoordDisplay();
+            });
+
+            closeCoordModalBtn.addEventListener('click', () => {
+                coordModal.classList.add('hidden');
+            });
+
+            coordXWrap.addEventListener('click', () => { activeInput = 'x'; updateCoordDisplay(); });
+            coordYWrap.addEventListener('click', () => { activeInput = 'y'; updateCoordDisplay(); });
+
+            keypadBtns.forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    // button 태그 내부의 span 등이 눌릴 수 있으므로 currentTarget 사용
+                    const key = e.currentTarget.dataset.key;
+                    let val = coordVals[activeInput];
+
+                    if (/[0-9]/.test(key)) {
+                        if (val === '0') val = key;
+                        else if (val === '-0') val = '-' + key;
+                        else val += key;
+                    } else if (key === '.') {
+                        if (!val.includes('.')) val += val === '' || val === '-' ? '0.' : '.';
+                    } else if (key === '-') {
+                        if (val.startsWith('-')) val = val.substring(1);
+                        else val = '-' + val;
+                    } else if (key === 'del') {
+                        val = val.slice(0, -1);
+                    } else if (key === 'c') {
+                        val = '';
+                    } else if (key === 'next') {
+                        activeInput = activeInput === 'x' ? 'y' : 'x';
+                        updateCoordDisplay();
+                        return;
+                    }
+
+                    coordVals[activeInput] = val;
+                    updateCoordDisplay();
+                });
+            });
+
+            addCoordBtn.addEventListener('click', () => {
+                let px = parseFloat(coordVals.x);
+                let py = parseFloat(coordVals.y);
+                
+                if (isNaN(px)) px = 0;
+                if (isNaN(py)) py = 0;
+
+                customPoints.push({x: px, y: py});
+                draw();
+
+                // 리셋 후 x 입력으로 되돌림 (연속 추가를 위해 창은 닫지 않음)
+                coordVals = { x: '', y: '' };
+                activeInput = 'x';
+                updateCoordDisplay();
+                
+                // 시각적 피드백
+                const originalText = addCoordBtn.textContent;
+                addCoordBtn.textContent = '추가 완료!';
+                addCoordBtn.classList.replace('bg-indigo-600', 'bg-emerald-500');
+                addCoordBtn.classList.replace('hover:bg-indigo-700', 'hover:bg-emerald-600');
+                setTimeout(() => {
+                    addCoordBtn.textContent = originalText;
+                    addCoordBtn.classList.replace('bg-emerald-500', 'bg-indigo-600');
+                    addCoordBtn.classList.replace('hover:bg-emerald-600', 'hover:bg-indigo-700');
+                }, 800);
+            });
+            // -------------------------
+
+            // 캔버스 인터랙션: 확대/축소
+            canvas.addEventListener('wheel', (e) => {
+                e.preventDefault();
+                
+                // 마우스 위치 기준으로 줌인/아웃 하기 위한 계산
+                const rect = canvas.getBoundingClientRect();
+                const mouseX = e.clientX - rect.left;
+                const mouseY = e.clientY - rect.top;
+                
+                const logicXBefore = screenToLogicX(mouseX);
+                const logicYBefore = screenToLogicY(mouseY);
+
+                const zoomFactor = 1.1;
+                if (e.deltaY < 0) {
+                    scale *= zoomFactor; // 확대
+                } else {
+                    scale /= zoomFactor; // 축소
+                }
+                
+                // 스케일 제한
+                scale = Math.max(1, Math.min(scale, 500));
+
+                // 줌 후 위치 보정
+                offsetX = mouseX - currentWidth/2 - logicXBefore * scale;
+                offsetY = mouseY - currentHeight/2 + logicYBefore * scale;
+
+                draw();
+            }, { passive: false });
+
+            // 캔버스 인터랙션: 드래그 이동 및 점 찍기
+            const startDrag = (e) => {
+                isDragging = true;
+                const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+                const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+                dragStartX = clientX;
+                dragStartY = clientY;
+                lastMouseX = clientX;
+                lastMouseY = clientY;
+                if (!isPointMode) canvas.style.cursor = 'grabbing';
+            };
+
+            const doDrag = (e) => {
+                if (!isDragging) return;
+                e.preventDefault();
+                const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+                const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+                
+                const dx = clientX - lastMouseX;
+                const dy = clientY - lastMouseY;
+                
+                offsetX += dx;
+                offsetY += dy;
+                
+                lastMouseX = clientX;
+                lastMouseY = clientY;
+                
+                draw();
+            };
+
+            const endDrag = (e) => {
+                if (!isDragging) return;
+                isDragging = false;
+                if (!isPointMode) canvas.style.cursor = 'grab';
+                
+                if (!e) return;
+                
+                const clientX = e.changedTouches ? e.changedTouches[0].clientX : e.clientX;
+                const clientY = e.changedTouches ? e.changedTouches[0].clientY : e.clientY;
+                
+                // 점 찍기 모드일 때 클릭(거의 이동하지 않음)으로 인식되면 점을 추가하거나 삭제
+                if (isPointMode && Math.abs(clientX - dragStartX) < 5 && Math.abs(clientY - dragStartY) < 5) {
+                    const rect = canvas.getBoundingClientRect();
+                    const canvasX = clientX - rect.left;
+                    const canvasY = clientY - rect.top;
+                    
+                    // 캔버스 내부 클릭인지 확인
+                    if (canvasX >= 0 && canvasX <= rect.width && canvasY >= 0 && canvasY <= rect.height) {
+                        const logicX = screenToLogicX(canvasX);
+                        const logicY = screenToLogicY(canvasY);
+                        
+                        // 정수 좌표로 스냅
+                        const snappedX = Math.round(logicX);
+                        const snappedY = Math.round(logicY);
+                        
+                        // 기존 점과 가까운지 확인 (가까우면 삭제)
+                        const hitIndex = customPoints.findIndex(p => {
+                            const sx = logicToScreenX(p.x);
+                            const sy = logicToScreenY(p.y);
+                            return Math.hypot(sx - canvasX, sy - canvasY) < 15; // 15px 반경
+                        });
+                        
+                        if (hitIndex >= 0) {
+                            customPoints.splice(hitIndex, 1);
+                        } else {
+                            // 정수인 점만 기록되도록 반올림된 좌표를 추가
+                            customPoints.push({x: snappedX, y: snappedY});
+                        }
+                        draw();
+                    }
+                }
+            };
+
+            canvas.addEventListener('mousedown', startDrag);
+            window.addEventListener('mousemove', doDrag);
+            window.addEventListener('mouseup', endDrag);
+
+            canvas.addEventListener('touchstart', startDrag, { passive: false });
+            window.addEventListener('touchmove', doDrag, { passive: false });
+            window.addEventListener('touchend', endDrag);
+
+            // ResizeObserver를 통해 컨테이너 크기 변화를 감지 (초기 렌더링 시 레이아웃 이슈 방지)
+            const resizeObserver = new ResizeObserver(() => {
+                resizeCanvas();
+            });
+            resizeObserver.observe(container);
+
+            // 초기 설정 실행
+            updateCoefficients('slider');
+        });
+    </script>
+</body>
+</html>
